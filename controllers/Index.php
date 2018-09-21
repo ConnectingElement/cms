@@ -39,7 +39,7 @@ class Index extends Controller
     /**
      * @var Cms\Classes\Theme
      */
-    protected $theme;
+    public $theme;
 
     /**
      * @var array Permissions required to view this page.
@@ -121,6 +121,11 @@ class Index extends Controller
     {
         $this->validateRequestTheme();
 
+        /*
+         * Extensibility
+         */
+        $this->fireSystemEvent('cms.template.beforeOpenTemplate');
+
         $type = Request::input('type');
         $template = $this->loadTemplate($type, Request::input('path'));
         $widget = $this->makeTemplateFormWidget($type, $template);
@@ -132,15 +137,29 @@ class Index extends Controller
             $this->vars['pageUrl'] = $router->urlFromPattern($template->url);
         }
 
-        return [
-            'tabTitle' => $this->getTabTitle($type, $template),
-            'tab'      => $this->makePartial('form_page', [
-                'form'          => $widget,
-                'templateType'  => $type,
-                'templateTheme' => $this->theme->getDirName(),
-                'templateMtime' => $template->mtime
-            ])
+        $partialData      = [
+            'form'          => $widget,
+            'templateType'  => $type,
+            'templateTheme' => $this->theme->getDirName(),
+            'templateMtime' => $template->mtime
         ];
+
+        /*
+         * Extensibility
+         */
+        $partialData = $this->fireSystemEvent('cms.template.extendOpenTemplatePartialData', [$partialData]);
+
+        $response = [
+            'tabTitle' => $this->getTabTitle($type, $template),
+            'tab'      => $this->makePartial('form_page', $partialData)
+        ];
+
+        /*
+         * Extensibility
+         */
+        $response = $this->fireSystemEvent('cms.template.beforeOpenTemplateRespond', [$response, $template]);
+
+        return $response;
     }
 
     public function onSave()
@@ -336,7 +355,7 @@ class Index extends Controller
     // Methods for the internal use
     //
 
-    protected function validateRequestTheme()
+    public function validateRequestTheme()
     {
         if ($this->theme->getDirName() != Request::input('theme')) {
             throw new ApplicationException(trans('cms::lang.theme.edit.not_match'));
@@ -353,6 +372,11 @@ class Index extends Controller
             'asset'   => Asset::class
         ];
 
+        /*
+         * Extensibility
+         */
+        $types = $this->fireSystemEvent('cms.template.beforeResolveTypeClassName', [$types]);
+
         if (!array_key_exists($type, $types)) {
             throw new ApplicationException(trans('cms::lang.template.invalid_type'));
         }
@@ -360,7 +384,7 @@ class Index extends Controller
         return $types[$type];
     }
 
-    protected function loadTemplate($type, $path)
+    public function loadTemplate($type, $path)
     {
         $class = $this->resolveTypeClassName($type);
 
@@ -376,7 +400,7 @@ class Index extends Controller
         return $template;
     }
 
-    protected function createTemplate($type)
+    public function createTemplate($type)
     {
         $class = $this->resolveTypeClassName($type);
 
@@ -387,7 +411,7 @@ class Index extends Controller
         return $template;
     }
 
-    protected function getTabTitle($type, $template)
+    public function getTabTitle($type, $template)
     {
         if ($type === 'page') {
             $result = $template->title ?: $template->getFileName();
@@ -410,7 +434,7 @@ class Index extends Controller
         return $template->getFileName();
     }
 
-    protected function makeTemplateFormWidget($type, $template, $alias = null)
+    public function makeTemplateFormWidget($type, $template, $alias = null)
     {
         $formConfigs = [
             'page'    => '~/modules/cms/classes/page/fields.yaml',
@@ -419,6 +443,11 @@ class Index extends Controller
             'content' => '~/modules/cms/classes/content/fields.yaml',
             'asset'   => '~/modules/cms/classes/asset/fields.yaml'
         ];
+
+        /*
+         * Extensibility
+         */
+        $formConfigs = $this->fireSystemEvent('cms.template.beforeMakeTemplateFormWidget', [$formConfigs]);
 
         if (!array_key_exists($type, $formConfigs)) {
             throw new ApplicationException(trans('cms::lang.template.not_found'));
@@ -433,7 +462,7 @@ class Index extends Controller
         return $widget;
     }
 
-    protected function upgradeSettings($settings)
+    public function upgradeSettings($settings)
     {
         /*
          * Handle component usage
@@ -503,7 +532,7 @@ class Index extends Controller
      * @param string $markup The markup to convert to unix style endings
      * @return string
      */
-    protected function convertLineEndings($markup)
+    public function convertLineEndings($markup)
     {
         $markup = str_replace(["\r\n", "\r"], "\n", $markup);
 
