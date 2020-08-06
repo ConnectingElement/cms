@@ -29,6 +29,7 @@ class ServiceProvider extends ModuleServiceProvider
         $this->registerComponents();
         $this->registerThemeLogging();
         $this->registerCombinerEvents();
+        $this->registerHalcyonModels();
 
         /*
          * Backend specific
@@ -322,6 +323,46 @@ class ServiceProvider extends ModuleServiceProvider
             if ($type === 'cms-page') {
                 return CmsPage::getRichEditorTypeInfo($type);
             }
+        });
+    }
+        Event::listen('pages.menuitem.resolveItem', function ($type, $item, $url, $theme) {
+            if ($type === 'cms-page') {
+                return CmsPage::resolveMenuItem($item, $url, $theme);
+            }
+        });
+    }
+
+    /**
+     * Registers events for rich editor page links.
+     */
+    protected function bootRichEditorEvents()
+    {
+        Event::listen('backend.richeditor.listTypes', function () {
+            return [
+                'cms-page' => 'cms::lang.page.cms_page'
+            ];
+        });
+
+        Event::listen('backend.richeditor.getTypeInfo', function ($type) {
+            if ($type === 'cms-page') {
+                return CmsPage::getRichEditorTypeInfo($type);
+            }
+        });
+    }
+
+    /**
+     * Registers the models to be made available to the theme database layer
+     */
+    protected function registerHalcyonModels()
+    {
+        Event::listen('system.console.theme.sync.getAvailableModelClasses', function () {
+            return [
+                Classes\Meta::class,
+                Classes\Page::class,
+                Classes\Layout::class,
+                Classes\Content::class,
+                Classes\Partial::class
+            ];
         });
     }
 }
