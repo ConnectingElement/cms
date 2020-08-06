@@ -572,7 +572,7 @@ class Index extends Controller
      * Validate that the current request is within the active theme
      * @return void
      */
-    protected function validateRequestTheme()
+    public function validateRequestTheme()
     {
         if ($this->theme->getDirName() != Request::input('theme')) {
             throw new ApplicationException(Lang::get('cms::lang.theme.edit.not_match'));
@@ -612,7 +612,7 @@ class Index extends Controller
      * @param string $path
      * @return mixed
      */
-    protected function loadTemplate($type, $path)
+    public function loadTemplate($type, $path)
     {
         $class = $this->resolveTypeClassName($type);
 
@@ -647,7 +647,7 @@ class Index extends Controller
      * @param string $type
      * @return mixed
      */
-    protected function createTemplate($type)
+    public function createTemplate($type)
     {
         $class = $this->resolveTypeClassName($type);
 
@@ -664,7 +664,7 @@ class Index extends Controller
      * @param string $template
      * @return string
      */
-    protected function getTabTitle($type, $template)
+    public function getTabTitle($type, $template)
     {
         if ($type === 'page') {
             $result = $template->title ?: $template->getFileName();
@@ -694,7 +694,7 @@ class Index extends Controller
      * @param string $alias
      * @return Backend\Widgets\Form
      */
-    protected function makeTemplateFormWidget($type, $template, $alias = null)
+    public function makeTemplateFormWidget($type, $template, $alias = null)
     {
         $formConfigs = [
             'page'    => '~/modules/cms/classes/page/fields.yaml',
@@ -726,7 +726,7 @@ class Index extends Controller
      * @param array $prevSettings The previous settings for this template.
      * @return array
      */
-    protected function upgradeSettings($settings, $prevSettings)
+    public function upgradeSettings($settings, $prevSettings)
     {
         /*
          * Handle component usage
